@@ -6,6 +6,7 @@ defmodule EctoElk.MixProject do
       app: :ecto_elk,
       version: "0.1.0",
       elixir: "~> 1.14",
+      compilers: [:private_module] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       test_paths: test_paths(System.get_env("INTEGRATION")),
       deps: deps(),
@@ -40,8 +41,9 @@ defmodule EctoElk.MixProject do
       {:ecto_sql, "~> 3.11.0"},
       {:elastix, ">= 0.0.0"},
       {:req, "~> 0.5.15"},
+      {:private_module, ">= 0.0.0"},
       {:testcontainers, "~> 1.13", only: [:test, :dev]},
-      {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false}
     ]
   end
 end

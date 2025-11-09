@@ -1,0 +1,18 @@
+defmodule EctoElk do
+end
+
+defmodule Ecto.Adapters.ElasticsearchSQL.Connection do
+  use PrivateModule
+
+  def all(query) do
+    IO.inspect(query, structs: false)
+    _from = from(query)
+    {"", []}
+  end
+
+  defp from(%{from: %{source: source}}) do
+    {from, _name} = source
+    [ " FROM ", from, " AS ", "e0" ]
+  end
+
+end
