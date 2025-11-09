@@ -7,9 +7,25 @@ defmodule EctoElk.MixProject do
       version: "0.1.0",
       elixir: "~> 1.14",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      test_paths: test_paths(System.get_env("INTEGRATION")),
+      deps: deps(),
+      elixirc_options: [
+        warnings_as_errors: true
+      ],
+      elixirc_paths: elixirc_paths(Mix.env()),
+      aliases: aliases()
     ]
   end
+
+  defp aliases do
+    [compile: "compile --force --warnings-as-errors"]
+  end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
+  defp test_paths(nil), do: ["test"]
+  defp test_paths(_), do: ["integration_test"]
 
   # Run "mix help compile.app" to learn about applications.
   def application do
@@ -21,8 +37,11 @@ defmodule EctoElk.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:dep_from_hexpm, "~> 0.3.0"},
-      # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
+      {:ecto_sql, "~> 3.11.0"},
+      {:elastix, ">= 0.0.0"},
+      {:req, "~> 0.5.15"},
+      {:testcontainers, "~> 1.13", only: [:test, :dev]},
+      {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
     ]
   end
 end
