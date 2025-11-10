@@ -23,6 +23,7 @@ defmodule EctoElk do
 
   defmodule Adapter do
     @behaviour Ecto.Adapter
+    @behaviour Ecto.Adapter.Queryable
 
     @impl Ecto.Adapter
     defmacro __before_compile__(_opts), do: :ok
@@ -49,5 +50,20 @@ defmodule EctoElk do
 
     @impl Ecto.Adapter
     def dumpers(_, type), do: [type]
+
+    @impl Ecto.Adapter.Queryable
+    def prepare(operation, %Ecto.Query{} = query) do
+      {:nocache, {operation, query}}
+    end
+
+    @impl Ecto.Adapter.Queryable
+    def execute(%{repo: _repo}, _query_meta, _query_cache, _params, _opts) do
+      {0, []}
+    end
+
+    @impl Ecto.Adapter.Queryable
+    def stream(_adapter_meta, _query_meta, _query_cache, _params, _opts) do
+      []
+    end
   end
 end
