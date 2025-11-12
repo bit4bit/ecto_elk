@@ -1,4 +1,8 @@
 defmodule EctoElk do
+  defmodule Error do
+    defexception [:message, :root_cause]
+  end
+
   defmodule Adapter.Supervisor do
     @moduledoc false
 
@@ -24,6 +28,7 @@ defmodule EctoElk do
   defmodule Adapter do
     @behaviour Ecto.Adapter
     @behaviour Ecto.Adapter.Queryable
+    @behaviour Ecto.Adapter.Storage
 
     @impl Ecto.Adapter
     defmacro __before_compile__(_opts), do: :ok
@@ -64,6 +69,43 @@ defmodule EctoElk do
     @impl Ecto.Adapter.Queryable
     def stream(_adapter_meta, _query_meta, _query_cache, _params, _opts) do
       []
+    end
+
+    @impl Ecto.Adapter.Storage
+    def storage_down(_opts) do
+      :ok
+    end
+
+    @impl Ecto.Adapter.Storage
+    def storage_status(opts) do
+      opts = Keyword.validate!(opts, [:hostname, :port])
+
+      Req.get!(elk_url(opts, "_aliases"))
+      |> storage_response()
+    end
+
+    @impl Ecto.Adapter.Storage
+    def storage_up(opts) do
+      opts = Keyword.validate!(opts, [:hostname, :port, :index_name])
+      index_name = Keyword.fetch!(opts, :index_name)
+
+      Req.put!(elk_url(opts, index_name))
+      |> storage_response()
+    end
+
+    defp storage_response(%Req.Response{} = resp) do
+      if(resp.status == 200, do: :ok, else: {:error, format_error(resp)})
+    end
+
+    defp elk_url(opts, endpoint) do
+      hostname = Keyword.fetch!(opts, :hostname)
+      port = Keyword.fetch!(opts, :port)
+
+      "http://#{hostname}:#{port}/#{endpoint}"
+    end
+
+    defp format_error(%Req.Response{body: body} = resp) do
+      %EctoElk.Error{message: get_in(body, ["error", "reason"]), root_cause: resp}
     end
   end
 end
