@@ -29,8 +29,8 @@ defmodule EctoElkTest do
 
       assert [%Model.User{name: ^name}] = TestRepo.all(Model.User)
     end
-
-    test "quere where one column" do
+  
+    test "quere where = one column" do
       name = a_name()
       a_user(name, "mero")
       a_user(a_name(), "mero2")
@@ -39,6 +39,47 @@ defmodule EctoElkTest do
 
       assert [%Model.User{name: ^name}] = TestRepo.all(query)
     end
+
+    test "quere where > one column" do
+      name = a_name()
+      a_user(name, "mero", [age: 33])
+      a_user(a_name(), "mero2", [age: 10])
+
+      query = Ecto.Query.from(u in Model.User, where: u.age > 20)
+
+      assert [%Model.User{name: ^name}] = TestRepo.all(query)
+    end
+
+    test "quere where >= one column" do
+      name = a_name()
+      a_user(name, "mero", [age: 33])
+      a_user(a_name(), "mero2", [age: 10])
+
+      query = Ecto.Query.from(u in Model.User, where: u.age >= 20)
+
+      assert [%Model.User{name: ^name}] = TestRepo.all(query)
+    end
+
+    test "quere where < one column" do
+      name = a_name()
+      a_user(name, "mero", [age: 33])
+      a_user(a_name(), "mero2", [age: 10])
+
+      query = Ecto.Query.from(u in Model.User, where: u.age < 20)
+
+      assert [%Model.User{email: "mero2"}] = TestRepo.all(query)
+    end
+
+    test "quere where <= one column" do
+      name = a_name()
+      a_user(name, "mero", [age: 33])
+      a_user(a_name(), "mero2", [age: 10])
+
+      query = Ecto.Query.from(u in Model.User, where: u.age <= 20)
+
+      assert [%Model.User{email: "mero2"}] = TestRepo.all(query)
+    end
+
 
     test "query where two columns interpolate variable" do
       name = a_name()
@@ -104,8 +145,8 @@ defmodule EctoElkTest do
     Req.delete!(elk_url("/#{name}"))
   end
 
-  defp a_user(name, email) do
-    Model.User.changeset(%Model.User{}, %{name: name, email: email})
+  defp a_user(name, email, attrs \\ []) do
+    Model.User.changeset(%Model.User{}, %{name: name, email: email} |> Map.merge(Map.new(attrs)))
     |> TestRepo.insert!()
   end
 

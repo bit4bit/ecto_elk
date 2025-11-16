@@ -21,9 +21,10 @@ defmodule EctoElk.Model.User do
   schema "users" do
     field(:name, :string)
     field(:email, :string)
+    field(:age, :integer, default: 0)
   end
 
   def changeset(%__MODULE__{} = rec, attrs \\ %{}) do
-    cast(rec, attrs, [:name, :email])
+    cast(rec, attrs, [:name, :email, :age])
   end
 end
