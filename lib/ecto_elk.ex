@@ -71,14 +71,16 @@ defmodule EctoElk do
     end
 
     @impl Ecto.Adapter.Queryable
-    def execute(adapter_meta, query_meta, {:nocache, {:all, query}}, _params, _) do
+    def execute(adapter_meta, query_meta, {:nocache, {:all, query}}, params, _) do
       {index_name, _schema} = query.from.source
       {_, {:source, _, _, returning_columns}} = query_meta[:select][:from]
+
+      sql_where = where(query, params)
 
       {:ok, records} =
         EctoElk.Adapter.Connection.sql_call(
           adapter_meta,
-          "SELECT * FROM #{index_name}",
+          "SELECT * FROM #{index_name} #{sql_where}",
           returning_columns
         )
 
@@ -145,5 +147,22 @@ defmodule EctoElk do
     @impl Ecto.Adapter.Schema
     def update(_adapter_meta, _schema_meta, _fields, _filters, _returning, _options),
       do: raise("not implemented")
+
+    defp where(%{wheres: [%{}]} = query, params) do
+      {:==, [],
+       [
+         {{:., [], [{:&, [], [0]}, field_name]}, [], []},
+         # ???
+         {:^, [], [0]}
+       ]} = List.first(query.wheres).expr
+
+      field_value = Enum.at(params, 0)
+
+      "WHERE #{field_name} = '#{field_value}'"
+    end
+
+    defp where(_query, _params) do
+      ""
+    end
   end
 end

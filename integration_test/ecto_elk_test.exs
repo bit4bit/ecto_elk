@@ -1,6 +1,7 @@
 defmodule EctoElkTest do
   use ExUnit.Case, async: false
 
+  require Ecto.Query
   alias EctoElk.Model
   alias EctoElk.Adapter
 
@@ -27,6 +28,16 @@ defmodule EctoElkTest do
 
 
       assert [%Model.User{name: ^name}] = TestRepo.all(Model.User)
+    end
+
+    test "quere where one column" do
+      name = a_name()
+      a_user(name, "mero")
+      a_user(a_name(), "mero2")
+
+      query = Ecto.Query.from(u in Model.User, where: u.name == ^name)
+
+      assert [%Model.User{name: ^name}] = TestRepo.all(query)
     end
 
     test "storage_status" do
@@ -59,7 +70,12 @@ defmodule EctoElkTest do
   defp delete_index(name) do
     Req.delete!(elk_url("/#{name}"))
   end
-  
+
+  defp a_user(name, email) do
+    Model.User.changeset(%Model.User{}, %{name: name, email: email})
+    |> TestRepo.insert!()
+  end
+
   defp elk_url(endpoint) do
     elastic_host = System.fetch_env!("ELASTICSEARCH_HOST")
     "http://#{elastic_host}:9200#{endpoint}"
