@@ -14,6 +14,6 @@ config =
 
 {:ok, container} = Testcontainers.start_container(config)
 System.put_env("ELASTICSEARCH_HOST", container.ip_address)
-
-
+app_env = Application.get_env(:ecto_elk, TestRepo) |> put_in([:hostname], container.ip_address)
+Application.put_env(:ecto_elk, TestRepo, app_env)
 ExUnit.start()

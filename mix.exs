@@ -9,6 +9,7 @@ defmodule EctoElk.MixProject do
       compilers: [:private_module] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       test_paths: test_paths(System.get_env("INTEGRATION")),
+      config_path: "./config/config.exs",
       deps: deps(),
       elixirc_options: [
         warnings_as_errors: true

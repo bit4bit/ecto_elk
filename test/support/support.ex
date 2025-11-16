@@ -1,3 +1,7 @@
+defmodule TestRepo do
+  use Ecto.Repo, otp_app: Mix.Project.config()[:app], adapter: EctoElk.Adapter
+end
+
 defmodule EctoElk.Model do
   defmacro __using__(_) do
     parent = __MODULE__
@@ -12,10 +16,14 @@ end
 
 defmodule EctoElk.Model.User do
   use EctoElk.Model
-  @primary_key {:user_id, :id, autogenerate: false}
+  @primary_key false
 
   schema "users" do
     field(:name, :string)
     field(:email, :string)
+  end
+
+  def changeset(%__MODULE__{} = rec, attrs \\ %{}) do
+    cast(rec, attrs, [:name, :email])
   end
 end

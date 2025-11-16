@@ -22,11 +22,18 @@ defmodule EctoElk do
 
   defmodule Adapter.Meta do
     use PrivateModule
-    defstruct stacktrace: false
+    defstruct [:hostname, :port, stacktrace: false]
+
+    @behaviour Access
+    defdelegate get(v, key, default), to: Map
+    defdelegate fetch(v, key), to: Map
+    defdelegate get_and_update(v, key, func), to: Map
+    defdelegate pop(v, key), to: Map
   end
 
   defmodule Adapter do
     @behaviour Ecto.Adapter
+    @behaviour Ecto.Adapter.Schema
     @behaviour Ecto.Adapter.Queryable
     @behaviour Ecto.Adapter.Storage
 
@@ -39,8 +46,10 @@ defmodule EctoElk do
     @impl Ecto.Adapter
     def init(config) do
       {:ok, repo} = Keyword.fetch(config, :repo)
+      hostname = Keyword.fetch!(config, :hostname)
+      port = Keyword.fetch!(config, :port)
       child_spec = __MODULE__.Supervisor.child_spec(repo)
-      meta = %__MODULE__.Meta{}
+      meta = %__MODULE__.Meta{hostname: hostname, port: port}
       {:ok, child_spec, meta}
     end
 
@@ -62,6 +71,20 @@ defmodule EctoElk do
     end
 
     @impl Ecto.Adapter.Queryable
+    def execute(adapter_meta, query_meta, {:nocache, {:all, query}}, _params, _) do
+      {index_name, _schema} = query.from.source
+      {_, {:source, _, _, returning_columns}} = query_meta[:select][:from]
+
+      {:ok, records} =
+        EctoElk.Adapter.Connection.sql_call(
+          adapter_meta,
+          "SELECT * FROM #{index_name}",
+          returning_columns
+        )
+
+      {Enum.count(records), records}
+    end
+
     def execute(%{repo: _repo}, _query_meta, _query_cache, _params, _opts) do
       {0, []}
     end
@@ -80,8 +103,7 @@ defmodule EctoElk do
     def storage_status(opts) do
       opts = Keyword.validate!(opts, [:hostname, :port])
 
-      Req.get!(elk_url(opts, "_aliases"))
-      |> storage_response()
+      EctoElk.Adapter.Connection.indexes(opts)
     end
 
     @impl Ecto.Adapter.Storage
@@ -89,23 +111,39 @@ defmodule EctoElk do
       opts = Keyword.validate!(opts, [:hostname, :port, :index_name])
       index_name = Keyword.fetch!(opts, :index_name)
 
-      Req.put!(elk_url(opts, index_name))
-      |> storage_response()
+      EctoElk.Adapter.Connection.create_index(opts, index_name)
     end
 
-    defp storage_response(%Req.Response{} = resp) do
-      if(resp.status == 200, do: :ok, else: {:error, format_error(resp)})
+    @impl Ecto.Adapter.Schema
+    def autogenerate(field_type), do: raise("not implemented #{inspect(field_type)}")
+
+    @impl Ecto.Adapter.Schema
+    def delete(_adapter_meta, _schema_meta, _filters, _returning_, _options),
+      do: raise("not implemented")
+
+    @impl Ecto.Adapter.Schema
+    def insert(adapter_meta, schema_meta, fields, _on_conflict, _returning, _options) do
+      %{source: source} = schema_meta
+
+      :ok = EctoElk.Adapter.Connection.create_doc(adapter_meta, source, Map.new(fields))
+      {:ok, []}
     end
 
-    defp elk_url(opts, endpoint) do
-      hostname = Keyword.fetch!(opts, :hostname)
-      port = Keyword.fetch!(opts, :port)
+    @impl Ecto.Adapter.Schema
+    def insert_all(
+          _adapter_meta,
+          _schema_meta,
+          _header,
+          _list,
+          _on_conflict,
+          _returning_,
+          _placeholders,
+          _options
+        ),
+        do: raise("not implemented")
 
-      "http://#{hostname}:#{port}/#{endpoint}"
-    end
-
-    defp format_error(%Req.Response{body: body} = resp) do
-      %EctoElk.Error{message: get_in(body, ["error", "reason"]), root_cause: resp}
-    end
+    @impl Ecto.Adapter.Schema
+    def update(_adapter_meta, _schema_meta, _fields, _filters, _returning, _options),
+      do: raise("not implemented")
   end
 end

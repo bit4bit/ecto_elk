@@ -1,21 +1,32 @@
 defmodule EctoElkTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
 
   alias EctoElk.Model
   alias EctoElk.Adapter
 
-  defmodule TestRepo do
-    use Ecto.Repo, otp_app: Mix.Project.config()[:app], adapter: EctoElk.Adapter
-  end
-
   describe "EctoElk.Adapter" do
     setup do
+      delete_index("users")
+
       {:ok, _} = start_supervised(%{id: __MODULE__, start: {TestRepo, :start_link, []}})
       :ok
     end
 
-    test "list empty" do
-      assert TestRepo.all(Model.User) == []
+    test "insert" do
+      name = a_name()
+
+      Model.User.changeset(%Model.User{}, %{name: name, email: "mero"})
+      |> TestRepo.insert!()
+    end
+
+    test "list all" do
+      name = a_name()
+      
+      Model.User.changeset(%Model.User{}, %{name: name, email: "mero"})
+      |> TestRepo.insert!()
+
+
+      assert [%Model.User{name: ^name}] = TestRepo.all(Model.User)
     end
 
     test "storage_status" do
@@ -42,7 +53,15 @@ defmodule EctoElkTest do
   end
 
   defp elk_indexes() do
+    %{} = Req.get!(elk_url("/_aliases")).body
+  end
+
+  defp delete_index(name) do
+    Req.delete!(elk_url("/#{name}"))
+  end
+  
+  defp elk_url(endpoint) do
     elastic_host = System.fetch_env!("ELASTICSEARCH_HOST")
-    Req.get!("http://#{elastic_host}:9200/_aliases").body
+    "http://#{elastic_host}:9200#{endpoint}"
   end
 end
