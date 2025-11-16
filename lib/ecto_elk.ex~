@@ -75,12 +75,13 @@ defmodule EctoElk do
       {index_name, _schema} = query.from.source
       {_, {:source, _, _, returning_columns}} = query_meta[:select][:from]
 
+      sql_columns = Enum.map(returning_columns, &elem(&1, 0)) |> Enum.join(",")
       sql_where = where(query, params)
 
       {:ok, records} =
         EctoElk.Adapter.Connection.sql_call(
           adapter_meta,
-          "SELECT * FROM #{index_name} #{sql_where}",
+          "SELECT #{sql_columns} FROM #{index_name} #{sql_where}",
           returning_columns
         )
 
@@ -148,21 +149,31 @@ defmodule EctoElk do
     def update(_adapter_meta, _schema_meta, _fields, _filters, _returning, _options),
       do: raise("not implemented")
 
-    defp where(%{wheres: [%{}]} = query, params) do
-      {:==, [],
-       [
-         {{:., [], [{:&, [], [0]}, field_name]}, [], []},
-         # ???
-         {:^, [], [0]}
-       ]} = List.first(query.wheres).expr
-
-      field_value = Enum.at(params, 0)
-
-      "WHERE #{field_name} = '#{field_value}'"
+    defp where(%{wheres: [%Ecto.Query.BooleanExpr{} = expr]}, params) do
+      "WHERE #{build_conditions(expr.expr, params)}"
     end
 
-    defp where(query, _params) do
+    defp where(_query, _params) do
       ""
+    end
+
+    defp build_conditions({:and, [], wheres}, params) do
+      Enum.map(wheres, fn where ->
+        build_clause(where, params)
+      end)
+      |> Enum.join(" AND ")
+    end
+
+    defp build_conditions({:==, [], _} = clause, params) do
+      build_clause(clause, params)
+    end
+
+    defp build_clause(
+           {:==, [], [{{:., [], [{:&, [], [0]}, field_name]}, [], []}, {:^, [], [params_index]}]},
+           params
+         ) do
+      field_value = Enum.at(params, params_index)
+      "#{field_name} = '#{field_value}'"
     end
   end
 end

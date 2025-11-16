@@ -169,11 +169,13 @@ defmodule EctoElk do
     end
 
     defp build_clause(
-           {:==, [], [{{:., [], [{:&, [], [0]}, field_name]}, [], []}, {:^, [], [params_index]}]},
+           {:==, [], [{{:., [], [{:&, [], [0]}, field_name]}, [], []}, value]},
            params
          ) do
-      field_value = Enum.at(params, params_index)
-      "#{field_name} = '#{field_value}'"
+      "#{field_name} = '#{field_value(value, params)}'"
     end
+
+    defp field_value({:^, [], [params_index]}, params), do: Enum.at(params, params_index)
+    defp field_value(value, _params) when is_binary(value), do: value
   end
 end
