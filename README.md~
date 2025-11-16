@@ -1,6 +1,12 @@
 # EctoElk
 
-**TODO: Add description**
+Since Elasticsearch has support for a subset of SQL, I will do a small exercise implementing an adapter for Ecto.
+
+
+## Guides
+
+- https://github.com/evadne/etso/
+- https://hexdocs.pm/ecto/3.11.2/Ecto.Adapter.html
 
 ## Installation
 

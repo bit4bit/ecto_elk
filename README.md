@@ -3,6 +3,23 @@
 Since Elasticsearch has support for a subset of SQL, I will do a small exercise implementing an adapter for Ecto.
 
 
+**config.exs**
+```elixir
+config :ecto_elk, MyRepo,
+  hostname: "localhost"
+  port: 9200,
+  secure: false #true to enable https
+```
+
+use adapter.
+
+```elixir
+defmodule MyRepo do
+  use Ecto.Repo, otp_app: :my_app, adapter: EctoElk.Adapter
+end
+```
+
+
 ## Guides
 
 - https://github.com/evadne/etso/

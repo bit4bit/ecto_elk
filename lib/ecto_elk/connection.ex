@@ -60,6 +60,7 @@ defmodule EctoElk.Adapter.Connection do
   end
 
   defp elk_url(opts, endpoint) do
-    "http://#{opts[:hostname]}:#{opts[:port]}/#{endpoint}"
+    secure = if(opts[:secure], do: "s", else: "")
+    "http#{secure}://#{opts[:hostname]}:#{opts[:port]}/#{endpoint}"
   end
 end
