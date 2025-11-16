@@ -157,6 +157,13 @@ defmodule EctoElk do
       ""
     end
 
+    defp build_conditions({:or, [], wheres}, params) do
+      Enum.map(wheres, fn where ->
+        build_clause(where, params)
+      end)
+      |> Enum.join(" OR ")
+    end
+
     defp build_conditions({:and, [], wheres}, params) do
       Enum.map(wheres, fn where ->
         build_clause(where, params)
