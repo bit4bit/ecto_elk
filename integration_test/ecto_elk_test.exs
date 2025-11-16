@@ -40,6 +40,17 @@ defmodule EctoElkTest do
       assert [%Model.User{name: ^name}] = TestRepo.all(query)
     end
 
+    test "query where two columns interpolate variable" do
+      name = a_name()
+      email = "mero2"
+      a_user(name, email)
+      a_user(a_name(), "mero2")
+
+      query = Ecto.Query.from(u in Model.User, where: u.name == ^name and u.email == ^email)
+
+      assert [%Model.User{name: ^name, email: "mero2"}] = TestRepo.all(query)
+    end
+
     test "storage_status" do
       :ok = Adapter.storage_status(
               [hostname: System.fetch_env!("ELASTICSEARCH_HOST"),
