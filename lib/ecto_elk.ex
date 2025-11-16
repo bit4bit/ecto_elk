@@ -78,14 +78,20 @@ defmodule EctoElk do
       sql_columns = Enum.map(returning_columns, &elem(&1, 0)) |> Enum.join(",")
       sql_where = where(query, params)
 
-      {:ok, records} =
+      sql_result =
         EctoElk.Adapter.Connection.sql_call(
           adapter_meta,
           "SELECT #{sql_columns} FROM #{index_name} #{sql_where}",
           returning_columns
         )
 
-      {Enum.count(records), records}
+      case sql_result do
+        {:ok, records} ->
+          {Enum.count(records), records}
+
+        {:error, error} ->
+          raise error
+      end
     end
 
     def execute(%{repo: _repo}, _query_meta, _query_cache, _params, _opts) do
@@ -171,7 +177,7 @@ defmodule EctoElk do
       |> Enum.join(" AND ")
     end
 
-    defp build_conditions({op, [], _} = clause, params) when op in [:==, :>, :>=, :<, :<=] do
+    defp build_conditions({_op, [], _} = clause, params) do
       build_clause(clause, params)
     end
 
@@ -179,20 +185,25 @@ defmodule EctoElk do
            {op, [], [{{:., [], [{:&, [], [0]}, field_name]}, [], []}, value]},
            params
          ) do
-
-      sql_op = case op do
-        :== -> "="
-        :> -> ">"
-        :>= -> ">="
-        :< -> "<"
-        :<= -> "<="
-      end
+      sql_op =
+        case op do
+          :== -> "="
+          :> -> ">"
+          :>= -> ">="
+          :< -> "<"
+          :<= -> "<="
+        end
 
       "#{field_name} #{sql_op} '#{field_value(value, params)}'"
     end
 
     defp field_value({:^, [], [params_index]}, params), do: Enum.at(params, params_index)
-    defp field_value(value, _params) when is_binary(value), do: value
+    defp field_value(value, _params) when is_binary(value), do: escape_string(value)
     defp field_value(value, _params) when is_integer(value), do: value
+
+    # TAKEN_FROM: https://github.com/elixir-ecto/ecto_sql/blob/a703c2edb90d3b85ca55767e12877da4f221faa9/lib/ecto/adapters/tds/connection.ex#L1815
+    defp escape_string(value) when is_binary(value) do
+      value |> :binary.replace("'", "''", [:global])
+    end
   end
 end

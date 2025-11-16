@@ -11,19 +11,24 @@ defmodule EctoElk.Adapter.Connection do
         }
       )
 
-    %{status: 200} = resp
-    columns = Enum.map(resp.body["columns"], &Map.fetch!(&1, "name"))
+    case resp do
+      %{status: 200} ->
+        columns = Enum.map(resp.body["columns"], &Map.fetch!(&1, "name"))
 
-    records =
-      Enum.map(resp.body["rows"], fn row ->
-        record = Enum.zip(columns, row) |> Map.new()
+        records =
+          Enum.map(resp.body["rows"], fn row ->
+            record = Enum.zip(columns, row) |> Map.new()
 
-        Enum.map(returning_columns, fn {returning_column, _type} ->
-          Map.fetch!(record, to_string(returning_column))
-        end)
-      end)
+            Enum.map(returning_columns, fn {returning_column, _type} ->
+              Map.fetch!(record, to_string(returning_column))
+            end)
+          end)
 
-    {:ok, records}
+        {:ok, records}
+
+      resp ->
+        {:error, format_error(resp)}
+    end
   end
 
   def create_doc(conn_meta, source, doc) do

@@ -40,6 +40,19 @@ defmodule EctoElkTest do
       assert [%Model.User{name: ^name}] = TestRepo.all(query)
     end
 
+    test "quere where = one column escapes string" do
+      name = a_name()
+      a_user(name, "mero")
+      a_user(a_name(), "mero2")
+
+      name_query = "#{name}'"
+      query = Ecto.Query.from(u in Model.User, where: u.name == ^name_query)
+
+      assert_raise EctoElk.Error, fn ->
+        assert [%Model.User{name: ^name}] = TestRepo.all(query)
+      end
+    end
+
     test "quere where > one column" do
       name = a_name()
       a_user(name, "mero", [age: 33])

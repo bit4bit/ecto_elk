@@ -157,6 +157,13 @@ defmodule EctoElk do
       ""
     end
 
+    defp build_conditions({:or, [], wheres}, params) do
+      Enum.map(wheres, fn where ->
+        build_clause(where, params)
+      end)
+      |> Enum.join(" OR ")
+    end
+
     defp build_conditions({:and, [], wheres}, params) do
       Enum.map(wheres, fn where ->
         build_clause(where, params)
@@ -164,16 +171,33 @@ defmodule EctoElk do
       |> Enum.join(" AND ")
     end
 
-    defp build_conditions({:==, [], _} = clause, params) do
+    defp build_conditions({_op, [], _} = clause, params) do
       build_clause(clause, params)
     end
 
     defp build_clause(
-           {:==, [], [{{:., [], [{:&, [], [0]}, field_name]}, [], []}, {:^, [], [params_index]}]},
+           {op, [], [{{:., [], [{:&, [], [0]}, field_name]}, [], []}, value]},
            params
          ) do
-      field_value = Enum.at(params, params_index)
-      "#{field_name} = '#{field_value}'"
+      sql_op =
+        case op do
+          :== -> "="
+          :> -> ">"
+          :>= -> ">="
+          :< -> "<"
+          :<= -> "<="
+        end
+
+      "#{field_name} #{sql_op} '#{field_value(value, params)}'"
+    end
+
+    defp field_value({:^, [], [params_index]}, params), do: Enum.at(params, params_index)
+    defp field_value(value, _params) when is_binary(value), do: escape_string(value)
+    defp field_value(value, _params) when is_integer(value), do: value
+
+    # TAKEN_FROM: https://github.com/elixir-ecto/ecto_sql/blob/a703c2edb90d3b85ca55767e12877da4f221faa9/lib/ecto/adapters/tds/connection.ex#L1815
+    defp escape_string(value) when is_binary(value) do
+      value |> :binary.replace("'", "''", [:global])
     end
   end
 end
