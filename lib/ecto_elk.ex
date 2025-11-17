@@ -171,45 +171,59 @@ defmodule EctoElk do
       ""
     end
 
-    defp build_conditions({:or, [], wheres}, params) do
-      Enum.map_join(wheres, " OR ", fn where ->
-        build_clause(where, params)
-      end)
+    defp build_conditions({op, [], [lhs, rhs]}, params) do
+      lhs_condition = build_conditions(lhs, params)
+      rhs_condition = build_conditions(rhs, params)
+      "#{lhs_condition} #{sql_op(op)} #{rhs_condition}"
     end
 
-    defp build_conditions({:and, [], wheres}, params) do
-      Enum.map_join(wheres, " AND ", fn where ->
-        build_clause(where, params)
-      end)
-    end
-
-    defp build_conditions({_op, [], _} = clause, params) do
-      build_clause(clause, params)
-    end
-
-    defp build_clause(
-           {op, [], [{{:., [], [{:&, [], [0]}, field_name]}, [], []}, value]},
-           params
+    defp build_conditions(
+           # what means?
+           {{:., [], [{:&, [], [0]}, field_name]}, [], []},
+           _params
          ) do
-      sql_op =
-        case op do
-          :== -> "="
-          :> -> ">"
-          :>= -> ">="
-          :< -> "<"
-          :<= -> "<="
-        end
-
-      "#{field_name} #{sql_op} '#{field_value(value, params)}'"
+      field_name
     end
 
-    defp field_value({:^, [], [params_index]}, params), do: Enum.at(params, params_index)
-    defp field_value(value, _params) when is_binary(value), do: escape_string(value)
-    defp field_value(value, _params) when is_integer(value), do: value
+    defp build_conditions({:^, [], [field_index]}, params) do
+      "'#{Enum.at(params, field_index) |> escape_string()}'"
+    end
+
+    defp build_conditions(value, _params) when is_integer(value) do
+      value
+    end
+
+    defp build_conditions(value, _params) when is_binary(value) do
+      "'#{escape_string(value)}'"
+    end
+
+    defp build_conditions(values, params) when is_list(values) do
+      sql =
+        Enum.map_join(values, ",", fn value ->
+          build_conditions(value, params)
+        end)
+
+      "(#{sql})"
+    end
+
+    # https://www.elastic.co/docs/reference/query-languages/sql/sql-functions
+    defp sql_op(:and), do: "AND"
+    defp sql_op(:or), do: "OR"
+    defp sql_op(:in), do: "IN"
+    defp sql_op(:!=), do: "!="
+    defp sql_op(:==), do: "="
+    defp sql_op(:>), do: ">"
+    defp sql_op(:<), do: "<"
+    defp sql_op(:>=), do: ">="
+    defp sql_op(:<=), do: "<="
+    defp sql_op(:+), do: "+"
+    defp sql_op(:-), do: "-"
 
     # TAKEN_FROM: https://github.com/elixir-ecto/ecto_sql/blob/a703c2edb90d3b85ca55767e12877da4f221faa9/lib/ecto/adapters/tds/connection.ex#L1815
     defp escape_string(value) when is_binary(value) do
-      value |> :binary.replace("'", "''", [:global])
+      value |> :binary.replace("'", "\'", [:global])
     end
+
+    defp escape_string(value), do: value
   end
 end

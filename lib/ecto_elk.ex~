@@ -1,5 +1,9 @@
 defmodule EctoElk do
+  @moduledoc false
+
   defmodule Error do
+    @moduledoc false
+
     defexception [:message, :root_cause]
   end
 
@@ -21,6 +25,8 @@ defmodule EctoElk do
   end
 
   defmodule Adapter.Meta do
+    @moduledoc false
+
     use PrivateModule
     defstruct [:hostname, :port, stacktrace: false]
 
@@ -32,6 +38,8 @@ defmodule EctoElk do
   end
 
   defmodule Adapter do
+    @moduledoc false
+
     @behaviour Ecto.Adapter
     @behaviour Ecto.Adapter.Schema
     @behaviour Ecto.Adapter.Queryable
@@ -75,7 +83,7 @@ defmodule EctoElk do
       {index_name, _schema} = query.from.source
       {_, {:source, _, _, returning_columns}} = query_meta[:select][:from]
 
-      sql_columns = Enum.map(returning_columns, &elem(&1, 0)) |> Enum.join(",")
+      sql_columns = Enum.map_join(returning_columns, ",", &elem(&1, 0))
       sql_where = where(query, params)
 
       sql_result =
@@ -156,54 +164,55 @@ defmodule EctoElk do
       do: raise("not implemented")
 
     defp where(%{wheres: [%Ecto.Query.BooleanExpr{} = expr]}, params) do
-      "WHERE #{build_conditions(expr.expr, params)}"
+      "WHERE #{build_conditions(expr.expr, params)}" |> IO.inspect()
     end
 
     defp where(_query, _params) do
       ""
     end
 
-    defp build_conditions({:or, [], wheres}, params) do
-      Enum.map(wheres, fn where ->
-        build_clause(where, params)
-      end)
-      |> Enum.join(" OR ")
+    defp build_conditions({op, [], [lhs, rhs]}, params) do
+      lhs_condition = build_conditions(lhs, params)
+      rhs_condition = build_conditions(rhs, params)
+      "#{lhs_condition} #{sql_op(op)} #{rhs_condition}"
     end
 
-    defp build_conditions({:and, [], wheres}, params) do
-      Enum.map(wheres, fn where ->
-        build_clause(where, params)
-      end)
-      |> Enum.join(" AND ")
-    end
-
-    defp build_conditions({_op, [], _} = clause, params) do
-      build_clause(clause, params)
-    end
-
-    defp build_clause(
-           {op, [], [{{:., [], [{:&, [], [0]}, field_name]}, [], []}, value]},
-           params
+    defp build_conditions(
+           # TODO: what means?
+           {{:., [], [{:&, [], [0]}, field_name]}, [], []},
+           _params
          ) do
-      sql_op =
-        case op do
-          :== -> "="
-          :> -> ">"
-          :>= -> ">="
-          :< -> "<"
-          :<= -> "<="
-        end
-
-      "#{field_name} #{sql_op} '#{field_value(value, params)}'"
+      field_name
     end
 
-    defp field_value({:^, [], [params_index]}, params), do: Enum.at(params, params_index)
-    defp field_value(value, _params) when is_binary(value), do: escape_string(value)
-    defp field_value(value, _params) when is_integer(value), do: value
+    defp build_conditions({:^, [], [field_index]}, params) do
+      "'#{Enum.at(params, field_index) |> escape_string()}'"
+    end
+
+    defp build_conditions(value, _params) when is_integer(value) do
+      value
+    end
+
+    defp build_conditions(value, _params) when is_binary(value) do
+      "'#{escape_string(value)}'"
+    end
+
+    defp sql_op(:and), do: "AND"
+    defp sql_op(:or), do: "OR"
+    defp sql_op(:!=), do: "!="
+    defp sql_op(:==), do: "="
+    defp sql_op(:>), do: ">"
+    defp sql_op(:<), do: "<"
+    defp sql_op(:>=), do: ">="
+    defp sql_op(:<=), do: "<="
+    defp sql_op(:+), do: "+"
+    defp sql_op(:-), do: "-"
 
     # TAKEN_FROM: https://github.com/elixir-ecto/ecto_sql/blob/a703c2edb90d3b85ca55767e12877da4f221faa9/lib/ecto/adapters/tds/connection.ex#L1815
     defp escape_string(value) when is_binary(value) do
-      value |> :binary.replace("'", "''", [:global])
+      value |> :binary.replace("'", "\'", [:global])
     end
+
+    defp escape_string(value), do: value
   end
 end
