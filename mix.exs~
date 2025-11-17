@@ -9,6 +9,7 @@ defmodule EctoElk.MixProject do
       compilers: [:private_module] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       test_paths: test_paths(System.get_env("INTEGRATION")),
+      config_path: "./config/config.exs",
       deps: deps(),
       elixirc_options: [
         warnings_as_errors: true
@@ -43,7 +44,8 @@ defmodule EctoElk.MixProject do
       {:req, "~> 0.5.15"},
       {:private_module, ">= 0.0.0"},
       {:testcontainers, "~> 1.13", only: [:test, :dev]},
-      {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false}
+      {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 end

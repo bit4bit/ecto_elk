@@ -20,7 +20,10 @@ defmodule EctoElk.MixProject do
   end
 
   defp aliases do
-    [compile: "compile --force --warnings-as-errors"]
+    [
+      compile: "compile --force --warnings-as-errors",
+      test: "do credo, test"
+    ]
   end
 
   defp elixirc_paths(:test), do: ["lib", "test/support"]
@@ -44,7 +47,8 @@ defmodule EctoElk.MixProject do
       {:req, "~> 0.5.15"},
       {:private_module, ">= 0.0.0"},
       {:testcontainers, "~> 1.13", only: [:test, :dev]},
-      {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false}
+      {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 end

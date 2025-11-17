@@ -1,8 +1,12 @@
 defmodule TestRepo do
+  @moduledoc false
+
   use Ecto.Repo, otp_app: Mix.Project.config()[:app], adapter: EctoElk.Adapter
 end
 
 defmodule EctoElk.Model do
+  @moduledoc false
+
   defmacro __using__(_) do
     parent = __MODULE__
 
@@ -15,6 +19,8 @@ defmodule EctoElk.Model do
 end
 
 defmodule EctoElk.Model.User do
+  @moduledoc false
+
   use EctoElk.Model
   @primary_key false
 

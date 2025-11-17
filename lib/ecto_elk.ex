@@ -1,5 +1,9 @@
 defmodule EctoElk do
+  @moduledoc false
+
   defmodule Error do
+    @moduledoc false
+
     defexception [:message, :root_cause]
   end
 
@@ -21,6 +25,8 @@ defmodule EctoElk do
   end
 
   defmodule Adapter.Meta do
+    @moduledoc false
+
     use PrivateModule
     defstruct [:hostname, :port, stacktrace: false]
 
@@ -32,6 +38,8 @@ defmodule EctoElk do
   end
 
   defmodule Adapter do
+    @moduledoc false
+
     @behaviour Ecto.Adapter
     @behaviour Ecto.Adapter.Schema
     @behaviour Ecto.Adapter.Queryable
@@ -75,7 +83,7 @@ defmodule EctoElk do
       {index_name, _schema} = query.from.source
       {_, {:source, _, _, returning_columns}} = query_meta[:select][:from]
 
-      sql_columns = Enum.map(returning_columns, &elem(&1, 0)) |> Enum.join(",")
+      sql_columns = Enum.map_join(returning_columns, ",", &elem(&1, 0))
       sql_where = where(query, params)
 
       sql_result =
@@ -164,17 +172,15 @@ defmodule EctoElk do
     end
 
     defp build_conditions({:or, [], wheres}, params) do
-      Enum.map(wheres, fn where ->
+      Enum.map_join(wheres, " OR ", fn where ->
         build_clause(where, params)
       end)
-      |> Enum.join(" OR ")
     end
 
     defp build_conditions({:and, [], wheres}, params) do
-      Enum.map(wheres, fn where ->
+      Enum.map_join(wheres, " AND ", fn where ->
         build_clause(where, params)
       end)
-      |> Enum.join(" AND ")
     end
 
     defp build_conditions({_op, [], _} = clause, params) do

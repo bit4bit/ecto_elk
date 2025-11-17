@@ -17,11 +17,9 @@ defmodule EctoElk.Adapter.Connection do
 
         records =
           Enum.map(resp.body["rows"], fn row ->
-            record = Enum.zip(columns, row) |> Map.new()
-
-            Enum.map(returning_columns, fn {returning_column, _type} ->
-              Map.fetch!(record, to_string(returning_column))
-            end)
+            Enum.zip(columns, row)
+            |> Map.new()
+            |> record_ordered(returning_columns)
           end)
 
         {:ok, records}
@@ -62,5 +60,11 @@ defmodule EctoElk.Adapter.Connection do
   defp elk_url(opts, endpoint) do
     secure = if(opts[:secure], do: "s", else: "")
     "http#{secure}://#{opts[:hostname]}:#{opts[:port]}/#{endpoint}"
+  end
+
+  defp record_ordered(record, returning_columns) do
+    Enum.map(returning_columns, fn {returning_column, _type} ->
+      Map.fetch!(record, to_string(returning_column))
+    end)
   end
 end

@@ -78,14 +78,20 @@ defmodule EctoElk do
       sql_columns = Enum.map(returning_columns, &elem(&1, 0)) |> Enum.join(",")
       sql_where = where(query, params)
 
-      {:ok, records} =
+      sql_result =
         EctoElk.Adapter.Connection.sql_call(
           adapter_meta,
           "SELECT #{sql_columns} FROM #{index_name} #{sql_where}",
           returning_columns
         )
 
-      {Enum.count(records), records}
+      case sql_result do
+        {:ok, records} ->
+          {Enum.count(records), records}
+
+        {:error, error} ->
+          raise error
+      end
     end
 
     def execute(%{repo: _repo}, _query_meta, _query_cache, _params, _opts) do
