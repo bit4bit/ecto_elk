@@ -209,6 +209,10 @@ defmodule EctoElk do
       index_name
     end
 
+    defp select(%{select: %{from: :none}}) do
+      {"COUNT(1) AS count", [{"count", :integer}]}
+    end
+
     defp select(query_meta) do
       {_, {:source, _, _, returning_columns}} = query_meta[:select][:from]
 

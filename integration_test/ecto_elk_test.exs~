@@ -29,6 +29,27 @@ defmodule EctoElkTest do
 
       assert [%Model.User{name: ^name}] = TestRepo.all(Model.User)
     end
+
+    test "quere where AND one column" do
+      name = a_name()
+      a_user(name, "mero")
+      a_user(a_name(), "mero2")
+
+      query = Ecto.Query.from(u in Model.User, where: u.name == ^name and u.email == "mero" and 1 == 1)
+
+      assert [%Model.User{name: ^name}] = TestRepo.all(query)
+    end
+      
+    test "quere where IN one column" do
+      name = a_name()
+      name2 = "demo"
+      a_user(name, "mero")
+      a_user(a_name(), "mero2")
+
+      query = Ecto.Query.from(u in Model.User, where: u.name in [^name, "demo", ^name2])
+
+      assert [%Model.User{name: ^name}] = TestRepo.all(query)
+    end
   
     test "quere where = one column" do
       name = a_name()
@@ -91,6 +112,26 @@ defmodule EctoElkTest do
       query = Ecto.Query.from(u in Model.User, where: u.age <= 20)
 
       assert [%Model.User{email: "mero2"}] = TestRepo.all(query)
+    end
+
+    test "quere where != one column" do
+      name = a_name()
+      a_user(name, "mero", [age: 33])
+      a_user(a_name(), "mero2", [age: 10])
+
+      query = Ecto.Query.from(u in Model.User, where: u.age != 10)
+
+      assert [%Model.User{email: "mero", age: 33}] = TestRepo.all(query)
+    end
+
+    test "quere +" do
+      name = a_name()
+      a_user(name, "mero", [age: 33])
+      a_user(a_name(), "mero2", [age: 10])
+
+      query = Ecto.Query.from(u in Model.User, where: (u.age + 1) == 34)
+
+      assert [%Model.User{email: "mero", age: 33}] = TestRepo.all(query)
     end
 
 
