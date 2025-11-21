@@ -164,7 +164,7 @@ defmodule EctoElk do
       do: raise("not implemented")
 
     defp where(%{wheres: [%Ecto.Query.BooleanExpr{} = expr]}, params) do
-      "WHERE #{build_conditions(expr.expr, params)}" |> IO.inspect()
+      "WHERE #{build_conditions(expr.expr, params)}"
     end
 
     defp where(_query, _params) do
@@ -178,7 +178,7 @@ defmodule EctoElk do
     end
 
     defp build_conditions(
-           # TODO: what means?
+           # what means?
            {{:., [], [{:&, [], [0]}, field_name]}, [], []},
            _params
          ) do
@@ -197,8 +197,19 @@ defmodule EctoElk do
       "'#{escape_string(value)}'"
     end
 
+    defp build_conditions(values, params) when is_list(values) do
+      sql =
+        Enum.map_join(values, ",", fn value ->
+          build_conditions(value, params)
+        end)
+
+      "(#{sql})"
+    end
+
+    # https://www.elastic.co/docs/reference/query-languages/sql/sql-functions
     defp sql_op(:and), do: "AND"
     defp sql_op(:or), do: "OR"
+    defp sql_op(:in), do: "IN"
     defp sql_op(:!=), do: "!="
     defp sql_op(:==), do: "="
     defp sql_op(:>), do: ">"
