@@ -208,13 +208,17 @@ defmodule EctoElk do
       "COUNT(1)"
     end
 
+    defp build_select({:sum, [], [{{:., _, [{:&, [], [0]}, field_name]}, [], []}]}, _params) do
+      ~s[SUM("#{field_name}")]
+    end
+
     defp from(query) do
       {index_name, _schema} = query.from.source
       index_name
     end
 
     defp select(%{select: %{from: :none}} = _query_meta, query) do
-      {build_select(query.select.expr), []}
+      {build_select(query.select.expr, []), []}
     end
 
     defp select(query_meta, _query) do
