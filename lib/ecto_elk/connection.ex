@@ -62,6 +62,10 @@ defmodule EctoElk.Adapter.Connection do
     "http#{secure}://#{opts[:hostname]}:#{opts[:port]}/#{endpoint}"
   end
 
+  defp record_ordered(record, []) do
+    Map.values(record)
+  end
+
   defp record_ordered(record, returning_columns) do
     Enum.map(returning_columns, fn {returning_column, _type} ->
       Map.fetch!(record, to_string(returning_column))

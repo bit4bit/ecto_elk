@@ -81,7 +81,7 @@ defmodule EctoElk do
     @impl Ecto.Adapter.Queryable
     def execute(adapter_meta, query_meta, {:nocache, {:all, query}}, params, _) do
       sql_from = from(query)
-      {sql_select, returning_columns} = select(query_meta)
+      {sql_select, returning_columns} = select(query_meta, query)
       sql_where = where(query, params)
 
       sql_result =
@@ -209,11 +209,11 @@ defmodule EctoElk do
       index_name
     end
 
-    defp select(%{select: %{from: :none}}) do
-      {"COUNT(1) AS count", [{"count", :integer}]}
+    defp select(%{select: %{from: :none}} = _query_meta, _query) do
+      {"COUNT(1)", []}
     end
 
-    defp select(query_meta) do
+    defp select(query_meta, _query) do
       {_, {:source, _, _, returning_columns}} = query_meta[:select][:from]
 
       sql_columns = Enum.map_join(returning_columns, ",", &elem(&1, 0))

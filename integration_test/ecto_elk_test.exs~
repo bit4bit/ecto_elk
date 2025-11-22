@@ -30,6 +30,25 @@ defmodule EctoElkTest do
       assert [%Model.User{name: ^name}] = TestRepo.all(Model.User)
     end
 
+    test "aggregate count" do
+      a_user(a_name(), a_email(), [age: 33])
+      a_user(a_name(), a_email(), [age: 11])
+      a_user(a_name(), a_email(), [age: 22])
+
+      assert TestRepo.aggregate(Model.User, :count) == 3
+    end
+
+    test "aggregate count using query" do
+      a_user(a_name(), a_email(), [age: 33])
+      a_user(a_name(), a_email(), [age: 11])
+      a_user(a_name(), a_email(), [age: 33])
+      a_user(a_name(), a_email(), [age: 22])
+
+      query = Ecto.Query.from(u in Model.User, where: u.age == 33)
+
+      assert TestRepo.aggregate(query, :count) == 2
+    end
+
     test "quere where AND one column" do
       name = a_name()
       a_user(name, "mero")
@@ -168,6 +187,7 @@ defmodule EctoElkTest do
       assert [%Model.User{name: ^name, email: "mero22"}] = TestRepo.all(query)
     end
 
+
     test "storage_status" do
       :ok = Adapter.storage_status(
               [hostname: System.fetch_env!("ELASTICSEARCH_HOST"),
@@ -183,10 +203,6 @@ defmodule EctoElkTest do
     end
   end
 
-  defp a_name() do
-    :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
-  end
-
   defp exists_elk_index?(name) do
     Map.has_key?(elk_indexes(), name)
   end
@@ -197,6 +213,14 @@ defmodule EctoElkTest do
 
   defp delete_index(name) do
     Req.delete!(elk_url("/#{name}"))
+  end
+
+  defp a_name() do
+    :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
+  end
+
+  defp a_email() do
+    a_name()
   end
 
   defp a_user(name, email, attrs \\ []) do
