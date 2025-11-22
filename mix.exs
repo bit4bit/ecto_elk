@@ -5,7 +5,7 @@ defmodule EctoElk.MixProject do
     [
       app: :ecto_elk,
       version: "0.1.0",
-      elixir: "~> 1.14",
+      elixir: "~> 1.15",
       compilers: [:private_module] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       test_paths: test_paths(System.get_env("INTEGRATION")),

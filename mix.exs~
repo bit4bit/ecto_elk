@@ -22,7 +22,7 @@ defmodule EctoElk.MixProject do
   defp aliases do
     [
       compile: "compile --force --warnings-as-errors",
-      test: "do credo, test"
+      ci: "do credo, test"
     ]
   end
 
