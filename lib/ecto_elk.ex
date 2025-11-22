@@ -212,6 +212,10 @@ defmodule EctoElk do
       ~s[SUM("#{field_name}")]
     end
 
+    defp build_select({:max, [], [{{:., _, [{:&, [], [0]}, field_name]}, [], []}]}, _params) do
+      ~s[MAX("#{field_name}")]
+    end
+
     defp from(query) do
       {index_name, _schema} = query.from.source
       index_name

@@ -67,6 +67,25 @@ defmodule EctoElkTest do
       assert TestRepo.aggregate(query, :sum, :age) == 33 + 33
     end
 
+    test "aggregate max" do
+      a_user(a_name(), a_email(), age: 11)
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 22)
+
+      assert TestRepo.aggregate(Model.User, :max, :age) == 33
+    end
+
+    test "aggregate max using query" do
+      a_user(a_name(), a_email(), age: 11)
+      a_user(a_name(), a_email(), age: 5)
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 22)
+
+      query = Ecto.Query.from(u in Model.User, where: u.age < 15)
+
+      assert TestRepo.aggregate(query, :max, :age) == 11
+    end
+
     test "quere where AND one column" do
       name = a_name()
       a_user(name, "mero")
