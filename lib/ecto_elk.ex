@@ -204,13 +204,17 @@ defmodule EctoElk do
       "(#{sql})"
     end
 
+    defp build_select({:count, [], []}, _params) do
+      "COUNT(1)"
+    end
+
     defp from(query) do
       {index_name, _schema} = query.from.source
       index_name
     end
 
-    defp select(%{select: %{from: :none}} = _query_meta, _query) do
-      {"COUNT(1)", []}
+    defp select(%{select: %{from: :none}} = _query_meta, query) do
+      {build_select(query.select.expr), []}
     end
 
     defp select(query_meta, _query) do
