@@ -86,6 +86,46 @@ defmodule EctoElkTest do
       assert TestRepo.aggregate(query, :max, :age) == 11
     end
 
+    test "aggregate min" do
+      a_user(a_name(), a_email(), age: 11)
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 22)
+
+      assert TestRepo.aggregate(Model.User, :min, :age) == 11
+    end
+
+    test "aggregate min using query" do
+      a_user(a_name(), a_email(), age: 11)
+      a_user(a_name(), a_email(), age: 5)
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 22)
+
+      query = Ecto.Query.from(u in Model.User, where: u.age < 15)
+
+      assert TestRepo.aggregate(query, :min, :age) == 5
+    end
+
+    test "aggregate avg" do
+      a_user(a_name(), a_email(), age: 5)
+      a_user(a_name(), a_email(), age: 5)
+      a_user(a_name(), a_email(), age: 5)
+      a_user(a_name(), a_email(), age: 5)
+
+      assert TestRepo.aggregate(Model.User, :avg, :age) == 5.0
+    end
+
+    test "aggregate avg using query" do
+      a_user(a_name(), a_email(), age: 5)
+      a_user(a_name(), a_email(), age: 5)
+      a_user(a_name(), a_email(), age: 5)
+      a_user(a_name(), a_email(), age: 5)
+
+
+      query = Ecto.Query.from(u in Model.User, where: u.age == 5)
+
+      assert TestRepo.aggregate(query, :avg, :age) == 5.0
+    end
+
     test "quere where AND one column" do
       name = a_name()
       a_user(name, "mero")
