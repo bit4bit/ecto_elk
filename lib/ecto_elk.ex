@@ -79,11 +79,11 @@ defmodule EctoElk do
     end
 
     @impl Ecto.Adapter.Queryable
-    def execute(adapter_meta, query_meta, {:nocache, {:all, query}}, params, _) do
+    def execute(adapter_meta, query_meta, {:nocache, {:all, query}}, params, _opts) do
       sql_from = from(query)
       {sql_select, returning_columns} = select(query_meta, query)
       sql_where = where(query, params)
-
+      
       sql_result =
         EctoElk.Adapter.Connection.sql_call(
           adapter_meta,
