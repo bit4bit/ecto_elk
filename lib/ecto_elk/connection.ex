@@ -3,16 +3,19 @@ defmodule EctoElk.Adapter.Connection do
 
   use PrivateModule
 
-  def sql_call(conn_meta, sql, returning_columns) do
+  def sql_call(conn_meta, sql, returning_columns, options) do
+    timeout = Keyword.fetch!(options, :timeout)
+
     resp =
-      Req.post!(elk_url(conn_meta, "_sql?format=json"),
+      Req.post(elk_url(conn_meta, "_sql?format=json"),
         json: %{
           "query" => sql
-        }
+        },
+        receive_timeout: timeout
       )
 
     case resp do
-      %{status: 200} ->
+      {:ok, %{status: 200} = resp} ->
         columns = Enum.map(resp.body["columns"], &Map.fetch!(&1, "name"))
 
         records =
@@ -24,7 +27,10 @@ defmodule EctoElk.Adapter.Connection do
 
         {:ok, records}
 
-      resp ->
+      {:ok, resp} ->
+        {:error, format_error(resp)}
+
+      {:error, resp} ->
         {:error, format_error(resp)}
     end
   end
@@ -51,6 +57,10 @@ defmodule EctoElk.Adapter.Connection do
       %{status: 200} -> :ok
       resp -> {:error, format_error(resp)}
     end
+  end
+
+  defp format_error(%Req.TransportError{reason: reason} = error) do
+    %EctoElk.Error{message: "Transport error: #{inspect(reason)}", root_cause: error}
   end
 
   defp format_error(%Req.Response{body: body} = resp) do

@@ -29,6 +29,18 @@ defmodule EctoElkTest do
       assert [%Model.User{name: ^name}] = TestRepo.all(Model.User)
     end
 
+    test "list all with timeout" do
+      name = a_name()
+
+      for _ <- [1..10000] do
+        a_user(a_name(), a_email())
+      end
+
+      assert_raise EctoElk.Error, fn ->
+        assert [%Model.User{name: ^name}] = TestRepo.all(Model.User, timeout: 0)
+      end
+    end
+
     test "aggregate count" do
       a_user(a_name(), a_email(), age: 33)
       a_user(a_name(), a_email(), age: 11)

@@ -79,16 +79,18 @@ defmodule EctoElk do
     end
 
     @impl Ecto.Adapter.Queryable
-    def execute(adapter_meta, query_meta, {:nocache, {:all, query}}, params, _opts) do
+    def execute(adapter_meta, query_meta, {:nocache, {:all, query}}, params, options) do
+      timeout = Keyword.get(options, :timeout, 15_000)
       sql_from = from(query)
       {sql_select, returning_columns} = select(query_meta, query)
       sql_where = where(query, params)
-      
+
       sql_result =
         EctoElk.Adapter.Connection.sql_call(
           adapter_meta,
           "SELECT #{sql_select} FROM #{sql_from} #{sql_where}",
-          returning_columns
+          returning_columns,
+          timeout: timeout
         )
 
       case sql_result do
