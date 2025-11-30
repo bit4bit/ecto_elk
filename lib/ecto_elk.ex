@@ -249,6 +249,10 @@ defmodule EctoElk do
       "COUNT(1)"
     end
 
+    defp build_select({:count, [], [{{:., _, [{:&, [], [0]}, field_name]}, [], []}]}, _params) do
+      ~s[COUNT("#{field_name}")]
+    end
+
     defp build_select({:sum, [], [{{:., _, [{:&, [], [0]}, field_name]}, [], []}]}, _params) do
       ~s[SUM("#{field_name}")]
     end
@@ -265,9 +269,11 @@ defmodule EctoElk do
       ~s[AVG("#{field_name}")]
     end
 
-    defp build_select({:{}, [], selects}, _params) do
-      Enum.map_join(selects, ",", fn
-        {{:., select_meta, [{:&, [], [0]}, field_name]}, [], []} ->
+    defp build_select({:{}, [], selects}, params) do
+      selects_with_index = Enum.with_index(selects)
+
+      Enum.map_join(selects_with_index, ",", fn
+        {{{:., select_meta, [{:&, [], [0]}, field_name]}, [], []}, column_index} ->
           [{:type, type}] = select_meta
 
           sql_type =
@@ -276,10 +282,10 @@ defmodule EctoElk do
               :integer -> "INT"
             end
 
-          ~s[CAST("#{field_name}" AS #{sql_type})]
+          ~s[CAST("#{field_name}" AS #{sql_type}) AS c#{column_index}]
 
-        {:count, [], [{{:., _select_meta, [{:&, [], [0]}, field_name]}, [], []}]} ->
-          ~s[COUNT("#{field_name}") AS c0]
+        {select, column_index} ->
+          ~s[#{build_select(select, params)} AS c#{column_index}]
       end)
     end
 
@@ -292,15 +298,16 @@ defmodule EctoElk do
            %{select: %{from: :none}} = _query_meta,
            %{select: %{expr: {:{}, [], selects}}} = query
          ) do
-      returning_columns =
-        Enum.map(selects, fn
-          {{:., select_meta, [{:&, [], [0]}, field_name]}, [], []} ->
-            [{:type, type}] = select_meta
-            {field_name, type}
+      selects_with_index = Enum.with_index(selects)
 
-          {:count, [], [{{:., select_meta, [{:&, [], [0]}, _field_name]}, [], []}]} ->
+      returning_columns =
+        Enum.map(selects_with_index, fn
+          {{{:., select_meta, [{:&, [], [0]}, _field_name]}, [], []}, column_index} ->
             [{:type, type}] = select_meta
-            {"c0", type}
+            {"c#{column_index}", type}
+
+          {{_op, [], [_]}, column_index} ->
+            {"c#{column_index}", :integer}
         end)
 
       {build_select(query.select.expr, []), returning_columns}
