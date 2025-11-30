@@ -86,11 +86,12 @@ defmodule EctoElk do
       sql_where = where(query, params)
       sql_limit = limit(query)
       sql_order_by = order_by(query, params)
+      sql_group_by = group_by(query, params)
 
       sql_result =
         EctoElk.Adapter.Connection.sql_call(
           adapter_meta,
-          "SELECT #{sql_select} FROM #{sql_from} #{sql_where} #{sql_order_by} #{sql_limit}",
+          ~s[SELECT #{sql_select} FROM "#{sql_from}" #{sql_where} #{sql_group_by} #{sql_order_by} #{sql_limit}],
           returning_columns,
           timeout: timeout
         )
@@ -164,6 +165,17 @@ defmodule EctoElk do
     @impl Ecto.Adapter.Schema
     def update(_adapter_meta, _schema_meta, _fields, _filters, _returning, _options),
       do: raise("not implemented")
+
+    defp group_by(%{group_bys: [group_by]}, _params) do
+      sql =
+        Enum.map_join(group_by.expr, ",", fn {{:., [], [{:&, [], [0]}, field_name]}, [], []} ->
+          "#{field_name}"
+        end)
+
+      "GROUP BY #{sql}"
+    end
+
+    defp group_by(_, _), do: ""
 
     defp order_by(%{order_bys: [order_by]}, params) do
       sql_order =
@@ -254,16 +266,20 @@ defmodule EctoElk do
     end
 
     defp build_select({:{}, [], selects}, _params) do
-      Enum.map_join(selects, ",", fn {{:., select_meta, [{:&, [], [0]}, field_name]}, [], []} ->
-        [{:type, type}] = select_meta
+      Enum.map_join(selects, ",", fn
+        {{:., select_meta, [{:&, [], [0]}, field_name]}, [], []} ->
+          [{:type, type}] = select_meta
 
-        sql_type =
-          case type do
-            :string -> "VARCHAR"
-            :integer -> "INT"
-          end
+          sql_type =
+            case type do
+              :string -> "VARCHAR"
+              :integer -> "INT"
+            end
 
-        ~s[CAST("#{field_name}" AS #{sql_type})]
+          ~s[CAST("#{field_name}" AS #{sql_type})]
+
+        {:count, [], [{{:., _select_meta, [{:&, [], [0]}, field_name]}, [], []}]} ->
+          ~s[COUNT("#{field_name}") AS c0]
       end)
     end
 
@@ -277,9 +293,14 @@ defmodule EctoElk do
            %{select: %{expr: {:{}, [], selects}}} = query
          ) do
       returning_columns =
-        Enum.map(selects, fn {{:., select_meta, [{:&, [], [0]}, field_name]}, [], []} ->
-          [{:type, type}] = select_meta
-          {field_name, type}
+        Enum.map(selects, fn
+          {{:., select_meta, [{:&, [], [0]}, field_name]}, [], []} ->
+            [{:type, type}] = select_meta
+            {field_name, type}
+
+          {:count, [], [{{:., select_meta, [{:&, [], [0]}, _field_name]}, [], []}]} ->
+            [{:type, type}] = select_meta
+            {"c0", type}
         end)
 
       {build_select(query.select.expr, []), returning_columns}

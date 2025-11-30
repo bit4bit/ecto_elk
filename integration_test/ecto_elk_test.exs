@@ -345,6 +345,17 @@ defmodule EctoElkTest do
       assert [%Model.User{age: 33}, %Model.User{age: 11}] = TestRepo.all(query)
     end
 
+    test "group by one column" do
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 11)
+
+      query =
+        Ecto.Query.from(u in Model.User, group_by: u.age, select: {u.age, count(u.age)})
+
+      assert [{11, 1}, {33, 2}] = TestRepo.all(query)
+    end
+
 
     test "storage_status" do
       :ok =
