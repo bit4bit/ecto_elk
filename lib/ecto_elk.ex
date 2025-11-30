@@ -84,11 +84,12 @@ defmodule EctoElk do
       sql_from = from(query)
       {sql_select, returning_columns} = select(query_meta, query)
       sql_where = where(query, params)
+      sql_limit = limit(query)
 
       sql_result =
         EctoElk.Adapter.Connection.sql_call(
           adapter_meta,
-          "SELECT #{sql_select} FROM #{sql_from} #{sql_where}",
+          "SELECT #{sql_select} FROM #{sql_from} #{sql_where} #{sql_limit}",
           returning_columns,
           timeout: timeout
         )
@@ -162,6 +163,12 @@ defmodule EctoElk do
     @impl Ecto.Adapter.Schema
     def update(_adapter_meta, _schema_meta, _fields, _filters, _returning, _options),
       do: raise("not implemented")
+
+    defp limit(%{limit: %Ecto.Query.LimitExpr{expr: limit}}) when is_integer(limit) do
+      "LIMIT #{limit}"
+    end
+
+    defp limit(_query), do: ""
 
     defp where(%{wheres: [%Ecto.Query.BooleanExpr{} = expr]}, params) do
       "WHERE #{build_conditions(expr.expr, params)}"

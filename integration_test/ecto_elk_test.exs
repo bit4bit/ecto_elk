@@ -138,7 +138,7 @@ defmodule EctoElkTest do
       assert TestRepo.aggregate(query, :avg, :age) == 5.0
     end
 
-    test "quere where AND one column" do
+    test "query where AND one column" do
       name = a_name()
       a_user(name, "mero")
       a_user(a_name(), "mero2")
@@ -149,7 +149,7 @@ defmodule EctoElkTest do
       assert [%Model.User{name: ^name}] = TestRepo.all(query)
     end
 
-    test "quere where IN one column" do
+    test "query where IN one column" do
       name = a_name()
       name2 = "demo"
       a_user(name, "mero")
@@ -160,7 +160,7 @@ defmodule EctoElkTest do
       assert [%Model.User{name: ^name}] = TestRepo.all(query)
     end
 
-    test "quere where = one column" do
+    test "query where = one column" do
       name = a_name()
       a_user(name, "mero")
       a_user(a_name(), "mero2")
@@ -170,7 +170,7 @@ defmodule EctoElkTest do
       assert [%Model.User{name: ^name}] = TestRepo.all(query)
     end
 
-    test "quere where = one column escapes string" do
+    test "query where = one column escapes string" do
       name = a_name()
       a_user(name, "mero")
       a_user(a_name(), "mero2")
@@ -183,7 +183,7 @@ defmodule EctoElkTest do
       end
     end
 
-    test "quere where > one column" do
+    test "query where > one column" do
       name = a_name()
       a_user(name, "mero", age: 33)
       a_user(a_name(), "mero2", age: 10)
@@ -193,7 +193,7 @@ defmodule EctoElkTest do
       assert [%Model.User{name: ^name}] = TestRepo.all(query)
     end
 
-    test "quere where >= one column" do
+    test "query where >= one column" do
       name = a_name()
       a_user(name, "mero", age: 33)
       a_user(a_name(), "mero2", age: 10)
@@ -203,7 +203,7 @@ defmodule EctoElkTest do
       assert [%Model.User{name: ^name}] = TestRepo.all(query)
     end
 
-    test "quere where < one column" do
+    test "query where < one column" do
       name = a_name()
       a_user(name, "mero", age: 33)
       a_user(a_name(), "mero2", age: 10)
@@ -213,7 +213,7 @@ defmodule EctoElkTest do
       assert [%Model.User{email: "mero2"}] = TestRepo.all(query)
     end
 
-    test "quere where <= one column" do
+    test "query where <= one column" do
       name = a_name()
       a_user(name, "mero", age: 33)
       a_user(a_name(), "mero2", age: 10)
@@ -223,7 +223,7 @@ defmodule EctoElkTest do
       assert [%Model.User{email: "mero2"}] = TestRepo.all(query)
     end
 
-    test "quere where != one column" do
+    test "query where != one column" do
       name = a_name()
       a_user(name, "mero", age: 33)
       a_user(a_name(), "mero2", age: 10)
@@ -233,7 +233,25 @@ defmodule EctoElkTest do
       assert [%Model.User{email: "mero", age: 33}] = TestRepo.all(query)
     end
 
-    test "quere +" do
+    test "query with limit" do
+      a_user(a_name(), a_email())
+      a_user(a_name(), a_email())
+      a_user(a_name(), a_email())
+
+      query = Ecto.Query.from(u in Model.User, limit: 1)
+
+      assert [%Model.User{}] = TestRepo.all(query)
+
+      query = Ecto.Query.from(u in Model.User, limit: 2)
+
+      assert [%Model.User{}, %Model.User{}] = TestRepo.all(query)
+
+      query = Ecto.Query.from(u in Model.User, limit: 0)
+
+      assert [] = TestRepo.all(query)
+    end
+
+    test "query +" do
       name = a_name()
       a_user(name, "mero", age: 33)
       a_user(a_name(), "mero2", age: 10)
