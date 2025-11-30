@@ -138,6 +138,26 @@ defmodule EctoElkTest do
       assert TestRepo.aggregate(query, :avg, :age) == 5.0
     end
 
+    test "query using custom select one column" do
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 11)
+
+      query =
+        Ecto.Query.from(u in Model.User, select: {u.age})
+
+      assert [{33}, {11}] = TestRepo.all(query)
+    end
+
+    test "query using custom select multi column" do
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 11)
+
+      query =
+        Ecto.Query.from(u in Model.User, select: {u.name, u.age})
+
+      assert [{_, 33}, {_, 11}] = TestRepo.all(query)
+    end
+
     test "query where AND one column" do
       name = a_name()
       a_user(name, "mero")
@@ -324,6 +344,7 @@ defmodule EctoElkTest do
 
       assert [%Model.User{age: 33}, %Model.User{age: 11}] = TestRepo.all(query)
     end
+
 
     test "storage_status" do
       :ok =

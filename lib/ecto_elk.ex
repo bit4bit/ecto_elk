@@ -253,9 +253,36 @@ defmodule EctoElk do
       ~s[AVG("#{field_name}")]
     end
 
+    defp build_select({:{}, [], selects}, _params) do
+      Enum.map_join(selects, ",", fn {{:., select_meta, [{:&, [], [0]}, field_name]}, [], []} ->
+        [{:type, type}] = select_meta
+
+        sql_type =
+          case type do
+            :string -> "VARCHAR"
+            :integer -> "INT"
+          end
+
+        ~s[CAST("#{field_name}" AS #{sql_type})]
+      end)
+    end
+
     defp from(query) do
       {index_name, _schema} = query.from.source
       index_name
+    end
+
+    defp select(
+           %{select: %{from: :none}} = _query_meta,
+           %{select: %{expr: {:{}, [], selects}}} = query
+         ) do
+      returning_columns =
+        Enum.map(selects, fn {{:., select_meta, [{:&, [], [0]}, field_name]}, [], []} ->
+          [{:type, type}] = select_meta
+          {field_name, type}
+        end)
+
+      {build_select(query.select.expr, []), returning_columns}
     end
 
     defp select(%{select: %{from: :none}} = _query_meta, query) do
