@@ -294,6 +294,37 @@ defmodule EctoElkTest do
       assert [%Model.User{name: ^name, email: "mero22"}] = TestRepo.all(query)
     end
 
+    test "order by asc" do
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 11)
+
+      query = Ecto.Query.from(u in Model.User, order_by: [asc: u.age])
+
+      assert [%Model.User{age: 11}, %Model.User{age: 33}] = TestRepo.all(query)
+
+      query = Ecto.Query.from(u in Model.User, order_by: [asc: :age])
+
+      assert [%Model.User{age: 11}, %Model.User{age: 33}] = TestRepo.all(query)
+    end
+
+    test "order by desc" do
+      a_user(a_name(), a_email(), age: 11)
+      a_user(a_name(), a_email(), age: 33)
+
+      query = Ecto.Query.from(u in Model.User, order_by: [desc: u.age])
+
+      assert [%Model.User{age: 33}, %Model.User{age: 11}] = TestRepo.all(query)
+    end
+
+    test "order by multi column" do
+      a_user(a_name(), a_email(), age: 11)
+      a_user(a_name(), a_email(), age: 33)
+
+      query = Ecto.Query.from(u in Model.User, order_by: [desc: u.age, asc: u.name])
+
+      assert [%Model.User{age: 33}, %Model.User{age: 11}] = TestRepo.all(query)
+    end
+
     test "storage_status" do
       :ok =
         Adapter.storage_status(

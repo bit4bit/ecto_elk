@@ -85,11 +85,12 @@ defmodule EctoElk do
       {sql_select, returning_columns} = select(query_meta, query)
       sql_where = where(query, params)
       sql_limit = limit(query)
+      sql_order_by = order_by(query, params)
 
       sql_result =
         EctoElk.Adapter.Connection.sql_call(
           adapter_meta,
-          "SELECT #{sql_select} FROM #{sql_from} #{sql_where} #{sql_limit}",
+          "SELECT #{sql_select} FROM #{sql_from} #{sql_where} #{sql_order_by} #{sql_limit}",
           returning_columns,
           timeout: timeout
         )
@@ -163,6 +164,25 @@ defmodule EctoElk do
     @impl Ecto.Adapter.Schema
     def update(_adapter_meta, _schema_meta, _fields, _filters, _returning, _options),
       do: raise("not implemented")
+
+    defp order_by(%{order_bys: [order_by]}, params) do
+      sql_order =
+        Enum.map_join(order_by.expr, ",", fn {direction, cond} ->
+          sql_expr = build_conditions(cond, params)
+
+          sql_direction =
+            case direction do
+              :asc -> "ASC"
+              :desc -> "DESC"
+            end
+
+          "#{sql_expr} #{sql_direction}"
+        end)
+
+      "ORDER BY #{sql_order}"
+    end
+
+    defp order_by(_query, _params), do: ""
 
     defp limit(%{limit: %Ecto.Query.LimitExpr{expr: limit}}) when is_integer(limit) do
       "LIMIT #{limit}"
