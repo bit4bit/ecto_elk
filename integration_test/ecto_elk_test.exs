@@ -281,6 +281,26 @@ defmodule EctoElkTest do
       assert [%Model.User{email: "mero", age: 33}] = TestRepo.all(query)
     end
 
+    test "query *" do
+      name = a_name()
+      a_user(name, "mero", age: 33)
+      a_user(a_name(), "mero2", age: 10)
+
+      query = Ecto.Query.from(u in Model.User, where: u.age * 2 == 66)
+
+      assert [%Model.User{email: "mero", age: 33}] = TestRepo.all(query)
+    end
+
+    test "query /" do
+      name = a_name()
+      a_user(name, "mero", age: 33)
+      a_user(a_name(), "mero2", age: 10)
+
+      query = Ecto.Query.from(u in Model.User, where: u.age / 2 == 5)
+
+      assert [%Model.User{email: "mero2", age: 10}] = TestRepo.all(query)
+    end
+
     test "query where two columns interpolate variable" do
       name = a_name()
       email = "mero2"

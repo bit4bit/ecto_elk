@@ -336,6 +336,8 @@ defmodule EctoElk do
     defp sql_op(:<=), do: "<="
     defp sql_op(:+), do: "+"
     defp sql_op(:-), do: "-"
+    defp sql_op(:*), do: "*"
+    defp sql_op(:/), do: "/"
 
     # TAKEN_FROM: https://github.com/elixir-ecto/ecto_sql/blob/a703c2edb90d3b85ca55767e12877da4f221faa9/lib/ecto/adapters/tds/connection.ex#L1815
     defp escape_string(value) when is_binary(value) do
