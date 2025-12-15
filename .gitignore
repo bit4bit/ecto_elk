@@ -27,3 +27,4 @@ ecto_elk-*.tar
 **~
 **.#
 .#**
+mix.lock

@@ -68,7 +68,7 @@ defmodule EctoElk.MixProject do
   defp package do
     [
       name: "ecto_elk",
-      files: ~w(lib .formatter.exs mix.exs README* LICENSE* CHANGELOG*),
+      files: ~w(lib .formatter.exs mix.exs README* LICENSE*),
       licenses: ["MIT"],
       links: %{
         "GitHub" => @source_url
