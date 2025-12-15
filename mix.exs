@@ -1,10 +1,13 @@
 defmodule EctoElk.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+  @source_url "https://github.com/bit4bit/ecto_elk"
+
   def project do
     [
       app: :ecto_elk,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.15",
       compilers: [:private_module] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
@@ -15,7 +18,12 @@ defmodule EctoElk.MixProject do
         warnings_as_errors: true
       ],
       elixirc_paths: elixirc_paths(Mix.env()),
-      aliases: aliases()
+      aliases: aliases(),
+      description: description(),
+      package: package(),
+      docs: docs(),
+      source_url: @source_url,
+      homepage_url: @source_url
     ]
   end
 
@@ -48,7 +56,33 @@ defmodule EctoElk.MixProject do
       {:private_module, ">= 0.0.0"},
       {:testcontainers, "~> 1.13", only: [:test, :dev]},
       {:dialyxir, "~> 1.2", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false}
+    ]
+  end
+
+  defp description do
+    "A working Ecto adapter for Elasticsearch that leverages Elasticsearch's SQL support to enable familiar Ecto query patterns for Elasticsearch indices."
+  end
+
+  defp package do
+    [
+      name: "ecto_elk",
+      files: ~w(lib .formatter.exs mix.exs README* LICENSE* CHANGELOG*),
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => @source_url
+      },
+      maintainers: ["bit4bit"]
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      source_ref: "v#{@version}",
+      source_url: @source_url,
+      extras: ["README.md"]
     ]
   end
 end

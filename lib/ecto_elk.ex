@@ -1,8 +1,12 @@
 defmodule EctoElk do
-  @moduledoc false
+  @moduledoc """
+  Provides an Ecto adapter implementation for Elasticsearch integration.
+  """
 
   defmodule Error do
-    @moduledoc false
+    @moduledoc """
+    Represents errors that occur during Elasticsearch operations and query execution.
+    """
 
     defexception [:message, :root_cause]
   end
@@ -38,7 +42,9 @@ defmodule EctoElk do
   end
 
   defmodule Adapter do
-    @moduledoc false
+    @moduledoc """
+    Bridges Ecto with Elasticsearch by translating Ecto queries into Elasticsearch SQL requests.
+    """
 
     @behaviour Ecto.Adapter
     @behaviour Ecto.Adapter.Schema
