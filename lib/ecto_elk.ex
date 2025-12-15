@@ -210,6 +210,16 @@ defmodule EctoElk do
       ""
     end
 
+    defp build_conditions({:not, [], [{:is_nil, [], lhs}]}, params) do
+      lhs_condition = build_conditions(lhs, params)
+      "#{lhs_condition} IS NOT NULL"
+    end
+
+    defp build_conditions({:is_nil, [], [lhs]}, params) do
+      lhs_condition = build_conditions(lhs, params)
+      "#{lhs_condition} IS NULL"
+    end
+
     defp build_conditions({op, [], [lhs, rhs]}, params) do
       lhs_condition = build_conditions(lhs, params)
       rhs_condition = build_conditions(rhs, params)
