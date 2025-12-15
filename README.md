@@ -19,6 +19,11 @@ defmodule MyRepo do
 end
 ```
 
+## Contributing
+
+```bash
+$ INTEGRATION=1 mix test
+```
 
 ## Guides
 

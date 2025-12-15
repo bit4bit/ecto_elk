@@ -267,6 +267,20 @@ defmodule EctoElkTest do
       assert [_, _] = TestRepo.all(query)
     end
 
+    test "query where nil/not nil multi column" do
+      name = a_name()
+      a_user(name, "mero", age: 33)
+      a_user(a_name(), "mero2", age: 10)
+
+      query = Ecto.Query.from(u in Model.User, where: u.age == 33 and is_nil(u.name) and not is_nil(u.email))
+
+      assert [] = TestRepo.all(query)
+
+      query = Ecto.Query.from(u in Model.User, where: u.age == 10 and not is_nil(u.age))
+
+      assert [%{age: 10}] = TestRepo.all(query)
+    end
+
     test "query with limit" do
       a_user(a_name(), a_email())
       a_user(a_name(), a_email())
