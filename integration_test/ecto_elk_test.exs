@@ -68,7 +68,7 @@ defmodule EctoElkTest do
       assert TestRepo.aggregate(Model.User, :sum, :age) == 33 + 11 + 22
     end
 
-    test "aggregate sum using query" do
+    test "aggregate sum with where" do
       a_user(a_name(), a_email(), [age: 33])
       a_user(a_name(), a_email(), [age: 11])
       a_user(a_name(), a_email(), [age: 33])
@@ -77,6 +77,17 @@ defmodule EctoElkTest do
       query = Ecto.Query.from(u in Model.User, where: u.age == 33)
 
       assert TestRepo.aggregate(query, :sum, :age) == 33 + 33
+    end
+
+    test "aggregate sum select" do
+      a_user(a_name(), a_email(), [age: 33])
+      a_user(a_name(), a_email(), [age: 11])
+      a_user(a_name(), a_email(), [age: 33])
+      a_user(a_name(), a_email(), [age: 22])
+
+      query = Ecto.Query.from(u in Model.User, select: {sum(u.age), min(u.age)}, group_by: u.age)
+
+      assert TestRepo.all(query) == [{11, 11}, {22, 22}, {66, 33}]
     end
 
     test "aggregate max" do
