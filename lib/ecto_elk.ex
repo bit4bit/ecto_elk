@@ -32,7 +32,7 @@ defmodule EctoElk do
     @moduledoc false
 
     use PrivateModule
-    defstruct [:hostname, :port, stacktrace: false]
+    defstruct [:hostname, :port, secure: false, stacktrace: false]
 
     @behaviour Access
     defdelegate get(v, key, default), to: Map
@@ -62,8 +62,9 @@ defmodule EctoElk do
       {:ok, repo} = Keyword.fetch(config, :repo)
       hostname = Keyword.fetch!(config, :hostname)
       port = Keyword.fetch!(config, :port)
+      secure = Keyword.get(config, :secure, false)
       child_spec = __MODULE__.Supervisor.child_spec(repo)
-      meta = %__MODULE__.Meta{hostname: hostname, port: port}
+      meta = %__MODULE__.Meta{hostname: hostname, port: port, secure: secure}
       {:ok, child_spec, meta}
     end
 

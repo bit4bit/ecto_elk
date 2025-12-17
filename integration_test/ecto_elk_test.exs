@@ -13,6 +13,24 @@ defmodule EctoElkTest do
       :ok
     end
 
+    test "secure connection" do
+      defmodule TestRepoSecure do
+        use Ecto.Repo,
+            otp_app: Mix.Project.config()[:app],
+            adapter: EctoElk.Adapter
+      end
+
+      start_supervised!({TestRepoSecure, [
+        hostname: System.get_env("ELASTICSEARCH_HOST"),
+        port: 9200,
+        secure: true
+      ]})
+
+      assert_raise EctoElk.Error,~s[Transport error: {:tls_alert, {:unexpected_message, ~c"TLS client: In state hello at tls_record.erl:561 generated CLIENT ALERT: Fatal - Unexpected Message\\n {unsupported_record_type,72}"}}], fn ->
+        TestRepoSecure.all(Model.User)
+      end
+    end
+
     test "insert" do
       name = a_name()
 
