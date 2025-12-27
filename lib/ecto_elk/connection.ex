@@ -6,13 +6,14 @@ defmodule EctoElk.Adapter.Connection do
   def sql_call(conn_meta, sql, returning_columns, options) do
     timeout = Keyword.fetch!(options, :timeout)
 
-    resp =
-      Req.post(elk_url(conn_meta, "_sql?format=json"),
-        json: %{
-          "query" => sql
-        },
+    req =
+      Req.new(
+        url: elk_url(conn_meta, "_sql?format=json"),
+        json: %{"query" => sql},
         receive_timeout: timeout
       )
+
+    resp = Req.post(req)
 
     case resp do
       {:ok, %{status: 200} = resp} ->
@@ -36,7 +37,9 @@ defmodule EctoElk.Adapter.Connection do
   end
 
   def create_doc(conn_meta, source, doc) do
-    case Req.post!(elk_url(conn_meta, "#{source}/_doc/?refresh=true"), json: doc) do
+    req = Req.new(url: elk_url(conn_meta, "#{source}/_doc/?refresh=true"), json: doc)
+
+    case Req.post!(req) do
       %{status: 201} ->
         :ok
 
@@ -46,14 +49,18 @@ defmodule EctoElk.Adapter.Connection do
   end
 
   def create_index(conn_meta, name) do
-    case Req.put!(elk_url(conn_meta, name)) do
+    req = Req.new(url: elk_url(conn_meta, name))
+
+    case Req.put!(req) do
       %{status: 200} -> :ok
       resp -> {:error, format_error(resp)}
     end
   end
 
   def indexes(conn_meta) do
-    case Req.get!(elk_url(conn_meta, "_aliases")) do
+    req = Req.new(url: elk_url(conn_meta, "_aliases"))
+
+    case Req.get!(req) do
       %{status: 200} -> :ok
       resp -> {:error, format_error(resp)}
     end
