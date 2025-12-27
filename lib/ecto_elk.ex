@@ -32,7 +32,7 @@ defmodule EctoElk do
     @moduledoc false
 
     use PrivateModule
-    defstruct [:hostname, :port, secure: false, stacktrace: false]
+    defstruct [:hostname, :port, username: nil, password: nil, secure: false, stacktrace: false]
 
     @behaviour Access
     defdelegate get(v, key, default), to: Map
@@ -63,8 +63,18 @@ defmodule EctoElk do
       hostname = Keyword.fetch!(config, :hostname)
       port = Keyword.fetch!(config, :port)
       secure = Keyword.get(config, :secure, false)
+      username = Keyword.get(config, :username, nil)
+      password = Keyword.get(config, :password, nil)
       child_spec = __MODULE__.Supervisor.child_spec(repo)
-      meta = %__MODULE__.Meta{hostname: hostname, port: port, secure: secure}
+
+      meta = %__MODULE__.Meta{
+        hostname: hostname,
+        port: port,
+        username: username,
+        password: password,
+        secure: secure
+      }
+
       {:ok, child_spec, meta}
     end
 
@@ -128,14 +138,14 @@ defmodule EctoElk do
 
     @impl Ecto.Adapter.Storage
     def storage_status(opts) do
-      opts = Keyword.validate!(opts, [:hostname, :port])
+      opts = Keyword.validate!(opts, [:hostname, :port, :username, :password])
 
       EctoElk.Adapter.Connection.indexes(opts)
     end
 
     @impl Ecto.Adapter.Storage
     def storage_up(opts) do
-      opts = Keyword.validate!(opts, [:hostname, :port, :index_name])
+      opts = Keyword.validate!(opts, [:hostname, :port, :index_name, :username, :password])
       index_name = Keyword.fetch!(opts, :index_name)
 
       EctoElk.Adapter.Connection.create_index(opts, index_name)

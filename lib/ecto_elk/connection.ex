@@ -12,6 +12,7 @@ defmodule EctoElk.Adapter.Connection do
         json: %{"query" => sql},
         receive_timeout: timeout
       )
+      |> put_auth_headers(conn_meta)
 
     resp = Req.post(req)
 
@@ -37,7 +38,9 @@ defmodule EctoElk.Adapter.Connection do
   end
 
   def create_doc(conn_meta, source, doc) do
-    req = Req.new(url: elk_url(conn_meta, "#{source}/_doc/?refresh=true"), json: doc)
+    req =
+      Req.new(url: elk_url(conn_meta, "#{source}/_doc/?refresh=true"), json: doc)
+      |> put_auth_headers(conn_meta)
 
     case Req.post!(req) do
       %{status: 201} ->
@@ -49,7 +52,9 @@ defmodule EctoElk.Adapter.Connection do
   end
 
   def create_index(conn_meta, name) do
-    req = Req.new(url: elk_url(conn_meta, name))
+    req =
+      Req.new(url: elk_url(conn_meta, name))
+      |> put_auth_headers(conn_meta)
 
     case Req.put!(req) do
       %{status: 200} -> :ok
@@ -58,7 +63,9 @@ defmodule EctoElk.Adapter.Connection do
   end
 
   def indexes(conn_meta) do
-    req = Req.new(url: elk_url(conn_meta, "_aliases"))
+    req =
+      Req.new(url: elk_url(conn_meta, "_aliases"))
+      |> put_auth_headers(conn_meta)
 
     case Req.get!(req) do
       %{status: 200} -> :ok
@@ -72,6 +79,15 @@ defmodule EctoElk.Adapter.Connection do
 
   defp format_error(%Req.Response{body: body} = resp) do
     %EctoElk.Error{message: get_in(body, ["error", "reason"]), root_cause: resp}
+  end
+
+  defp put_auth_headers(req, conn_meta) do
+    {username, password} = {conn_meta[:username], conn_meta[:password]}
+
+    case {username, password} do
+      {nil, nil} -> req
+      _ -> req |> Req.merge(auth: {:basic, "#{username}:#{password}"})
+    end
   end
 
   defp elk_url(opts, endpoint) do

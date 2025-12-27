@@ -32,7 +32,6 @@ A working Ecto adapter for Elasticsearch that leverages Elasticsearch's SQL supp
 ### Storage Operations
 - **storage_up** - Create Elasticsearch indices
 - **storage_status** - Check index status
-- **storage_down** - Remove indices
 
 ### Type Support
 - String (VARCHAR)
@@ -64,6 +63,8 @@ The following Ecto features are **not yet implemented**:
 ```elixir
 config :ecto_elk, MyRepo,
   hostname: "localhost"
+  # username: "username",
+  # password: "password",
   port: 9200,
   secure: false #true to enable https
 ```
@@ -103,4 +104,3 @@ end
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at <https://hexdocs.pm/ecto_elk>.
-

@@ -1,8 +1,10 @@
 Testcontainers.start_link()
+
 config =
   Testcontainers.Container.new("docker.elastic.co/elasticsearch/elasticsearch:8.18.8")
+  |> Testcontainers.Container.with_environment("ELASTIC_USERNAME", "elastic")
   |> Testcontainers.Container.with_environment("ELASTIC_PASSWORD", "elastic")
-  |> Testcontainers.Container.with_environment("xpack.security.enabled", "false")
+  |> Testcontainers.Container.with_environment("xpack.security.enabled", "true")
   |> Testcontainers.Container.with_environment("discovery.type", "single-node")
   |> Testcontainers.Container.with_environment("cluster.name", "docker-cluster")
   |> Testcontainers.Container.with_environment("node.name", "elasticsearch")

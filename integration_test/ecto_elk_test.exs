@@ -16,18 +16,46 @@ defmodule EctoElkTest do
     test "secure connection" do
       defmodule TestRepoSecure do
         use Ecto.Repo,
-            otp_app: Mix.Project.config()[:app],
-            adapter: EctoElk.Adapter
+          otp_app: Mix.Project.config()[:app],
+          adapter: EctoElk.Adapter
       end
 
-      start_supervised!({TestRepoSecure, [
-        hostname: System.get_env("ELASTICSEARCH_HOST"),
-        port: 9200,
-        secure: true
-      ]})
+      start_supervised!(
+        {TestRepoSecure,
+         [
+           hostname: System.get_env("ELASTICSEARCH_HOST"),
+           port: 9200,
+           secure: true
+         ]}
+      )
 
-      assert_raise EctoElk.Error,~s[Transport error: {:tls_alert, {:unexpected_message, ~c"TLS client: In state hello at tls_record.erl:561 generated CLIENT ALERT: Fatal - Unexpected Message\\n {unsupported_record_type,72}"}}], fn ->
-        TestRepoSecure.all(Model.User)
+      assert_raise EctoElk.Error,
+                   ~s[Transport error: {:tls_alert, {:unexpected_message, ~c"TLS client: In state hello at tls_record.erl:561 generated CLIENT ALERT: Fatal - Unexpected Message\\n {unsupported_record_type,72}"}}],
+                   fn ->
+                     TestRepoSecure.all(Model.User)
+                   end
+    end
+
+    test "authenticate" do
+      defmodule TestRepoAuth do
+        use Ecto.Repo,
+          otp_app: Mix.Project.config()[:app],
+          adapter: EctoElk.Adapter
+      end
+
+      start_supervised!(
+        {TestRepoAuth,
+         [
+           hostname: System.get_env("ELASTICSEARCH_HOST"),
+           username: "test",
+           password: "test",
+           port: 9200,
+           secure: false
+         ]}
+      )
+
+      assert_raise EctoElk.Error, ~r/unable to authenticate user/, fn ->
+        TestRepoAuth.all(Model.User)
       end
     end
 
@@ -87,10 +115,10 @@ defmodule EctoElkTest do
     end
 
     test "aggregate sum with where" do
-      a_user(a_name(), a_email(), [age: 33])
-      a_user(a_name(), a_email(), [age: 11])
-      a_user(a_name(), a_email(), [age: 33])
-      a_user(a_name(), a_email(), [age: 22])
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 11)
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 22)
 
       query = Ecto.Query.from(u in Model.User, where: u.age == 33)
 
@@ -98,10 +126,10 @@ defmodule EctoElkTest do
     end
 
     test "aggregate sum select" do
-      a_user(a_name(), a_email(), [age: 33])
-      a_user(a_name(), a_email(), [age: 11])
-      a_user(a_name(), a_email(), [age: 33])
-      a_user(a_name(), a_email(), [age: 22])
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 11)
+      a_user(a_name(), a_email(), age: 33)
+      a_user(a_name(), a_email(), age: 22)
 
       query = Ecto.Query.from(u in Model.User, select: {sum(u.age), min(u.age)}, group_by: u.age)
 
@@ -160,7 +188,6 @@ defmodule EctoElkTest do
       a_user(a_name(), a_email(), age: 5)
       a_user(a_name(), a_email(), age: 5)
       a_user(a_name(), a_email(), age: 5)
-
 
       query = Ecto.Query.from(u in Model.User, where: u.age == 5)
 
@@ -301,7 +328,10 @@ defmodule EctoElkTest do
       a_user(name, "mero", age: 33)
       a_user(a_name(), "mero2", age: 10)
 
-      query = Ecto.Query.from(u in Model.User, where: u.age == 33 and is_nil(u.name) and not is_nil(u.email))
+      query =
+        Ecto.Query.from(u in Model.User,
+          where: u.age == 33 and is_nil(u.name) and not is_nil(u.email)
+        )
 
       assert [] = TestRepo.all(query)
 
@@ -433,11 +463,12 @@ defmodule EctoElkTest do
       assert [{11, 1}, {33, 2}] = TestRepo.all(query)
     end
 
-
     test "storage_status" do
       :ok =
         Adapter.storage_status(
           hostname: System.fetch_env!("ELASTICSEARCH_HOST"),
+          username: "elastic",
+          password: "elastic",
           port: 9200
         )
     end
@@ -448,6 +479,8 @@ defmodule EctoElkTest do
       :ok =
         Adapter.storage_up(
           hostname: System.fetch_env!("ELASTICSEARCH_HOST"),
+          username: "elastic",
+          password: "elastic",
           port: 9200,
           index_name: index_name
         )
@@ -461,11 +494,13 @@ defmodule EctoElkTest do
   end
 
   defp elk_indexes() do
-    %{} = Req.get!(elk_url("/_aliases")).body
+    req = Req.new(url: elk_url("/_aliases")) |> auth()
+    %{} = Req.get!(req).body
   end
 
   defp delete_index(name) do
-    Req.delete!(elk_url("/#{name}"))
+    req = Req.new(url: elk_url("/#{name}")) |> auth()
+    Req.delete!(req)
   end
 
   defp a_name() do
@@ -479,6 +514,11 @@ defmodule EctoElkTest do
   defp a_user(name, email, attrs \\ []) do
     Model.User.changeset(%Model.User{}, %{name: name, email: email} |> Map.merge(Map.new(attrs)))
     |> TestRepo.insert!()
+  end
+
+  defp auth(req) do
+    config = Application.get_env(:ecto_elk, TestRepo)
+    Req.merge(req, auth: {:basic, "#{config[:username]}:#{config[:password]}"})
   end
 
   defp elk_url(endpoint) do
